@@ -1,0 +1,6 @@
+// Únicamente se persiste el corrector seleccionado, nunca el resultado generado.
+export function createMasterStore(indexedDB=globalThis.indexedDB){
+ async function database(){if(!indexedDB)throw new Error('Este navegador no permite recordar el corrector.');return new Promise((resolve,reject)=>{const request=indexedDB.open('pai-importador-master',1);request.onupgradeneeded=()=>request.result.createObjectStore('master');request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Cierra otras pestañas de la aplicación e inténtalo de nuevo.'));request.onsuccess=()=>resolve(request.result);});}
+ async function transaction(mode,action){const db=await database();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('master',mode);let result;const request=action(tx.objectStore('master'));request.onsuccess=()=>{result=request.result;};tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error??new Error('No se pudo completar el guardado local.'));});}finally{db.close();}}
+ return {load:()=>transaction('readonly',s=>s.get('current')),save:bytes=>transaction('readwrite',s=>s.put({version:1,bytes},'current')),remove:()=>transaction('readwrite',s=>s.delete('current'))};
+}
