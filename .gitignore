@@ -1,0 +1,5 @@
+*.xlsx
+*.xlsm
+*.zip
+node_modules/
+private/
